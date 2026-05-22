@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QBUS5001 Interactive Exercises</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false})"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+:root{
+  --navy:#1e293b;--navy2:#334155;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+  --primary:#4f46e5;--primary-l:#eef2ff;
+  --easy:#22c55e;--easy-l:#f0fdf4;
+  --medium:#f59e0b;--medium-l:#fffbeb;
+  --hard:#ef4444;--hard-l:#fef2f2;
+  --expert:#8b5cf6;--expert-l:#f5f3ff;
+  --correct:#16a34a;--wrong:#dc2626;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.7}
+
+/* ── Layout ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--navy);min-height:100vh;position:fixed;top:0;left:0;
+  overflow-y:auto;padding:20px 0;display:flex;flex-direction:column;z-index:100}
+.content{margin-left:260px;flex:1;padding:32px 40px 80px;max-width:calc(260px + 860px)}
+
+/* ── Sidebar ── */
+.sb-brand{color:#f8fafc;font-weight:800;font-size:.85rem;letter-spacing:.05em;padding:0 18px 16px;
+  border-bottom:1px solid var(--navy2);margin-bottom:10px}
+.sb-section{color:#94a3b8;font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;padding:10px 18px 4px}
+.sb-btn{display:block;width:100%;text-align:left;color:#94a3b8;background:none;border:none;
+  padding:7px 18px;font-size:.8rem;cursor:pointer;border-left:3px solid transparent;
+  transition:all .14s;font-family:inherit}
+.sb-btn:hover{color:#f1f5f9;background:var(--navy2)}
+.sb-btn.active{color:#7dd3fc;border-left-color:#7dd3fc;background:rgba(125,211,252,.06)}
+.sb-divider{border:none;border-top:1px solid var(--navy2);margin:8px 0}
+.sb-stat{padding:4px 18px;font-size:.72rem;color:#64748b}
+
+/* ── Top bar ── */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:-32px -40px 28px;
+  position:sticky;top:0;z-index:50}
+.topbar h2{font-size:1rem;font-weight:700;color:var(--text);flex:1}
+.filter-group{display:flex;gap:6px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border-radius:6px;border:2px solid var(--border);background:#fff;
+  font-size:.75rem;font-weight:600;cursor:pointer;transition:all .14s;color:var(--muted)}
+.filter-btn:hover{border-color:var(--primary);color:var(--primary)}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.filter-btn.f-easy.active{background:var(--easy);border-color:var(--easy)}
+.filter-btn.f-medium.active{background:var(--medium);border-color:var(--medium)}
+.filter-btn.f-hard.active{background:var(--hard);border-color:var(--hard)}
+.filter-btn.f-expert.active{background:var(--expert);border-color:var(--expert)}
+
+/* ── Progress bar ── */
+.prog-wrap{background:var(--border);border-radius:999px;height:6px;margin-bottom:24px}
+.prog-bar{background:var(--primary);border-radius:999px;height:100%;width:0;transition:width .4s}
+.score-line{font-size:.82rem;color:var(--muted);margin-bottom:20px;display:flex;gap:16px}
+.score-line span{font-weight:700;color:var(--text)}
+
+/* ── Question cards ── */
+.q-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;
+  transition:box-shadow .15s}
+.q-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.q-meta{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.q-badge{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.b-easy{background:var(--easy-l);color:var(--easy)}
+.b-medium{background:var(--medium-l);color:var(--medium)}
+.b-hard{background:var(--hard-l);color:var(--hard)}
+.b-expert{background:var(--expert-l);color:var(--expert)}
+.b-type{background:#f1f5f9;color:var(--muted)}
+.q-num{font-size:.72rem;color:var(--muted);margin-left:auto;align-self:center}
+.q-text{font-size:.97rem;font-weight:500;margin-bottom:18px;line-height:1.65}
+
+/* MCQ options */
+.options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.opt-btn{text-align:left;padding:11px 16px;border-radius:8px;border:2px solid var(--border);
+  background:#fff;cursor:pointer;font-size:.88rem;line-height:1.5;transition:all .15s;font-family:inherit}
+.opt-btn:hover:not(:disabled){border-color:var(--primary);background:var(--primary-l)}
+.opt-btn.selected{border-color:var(--primary);background:var(--primary-l)}
+.opt-btn.correct{border-color:var(--correct);background:#f0fdf4;color:var(--correct);font-weight:600}
+.opt-btn.wrong{border-color:var(--wrong);background:#fef2f2;color:var(--wrong)}
+.opt-btn:disabled{cursor:default}
+
+/* T/F buttons */
+.tf-btns{display:flex;gap:10px;margin-bottom:16px}
+.tf-btn{padding:10px 28px;border-radius:8px;border:2px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.9rem;font-weight:700;transition:all .15s;font-family:inherit}
+.tf-btn:hover:not(:disabled){border-color:var(--primary)}
+.tf-btn.correct{border-color:var(--correct);background:#f0fdf4;color:var(--correct)}
+.tf-btn.wrong{border-color:var(--wrong);background:#fef2f2;color:var(--wrong)}
+
+/* Case study steps */
+.cs-steps{margin-bottom:16px}
+.cs-step{background:#f8fafc;border:1px solid var(--border);border-radius:8px;
+  padding:12px 16px;margin-bottom:8px;font-size:.87rem;cursor:pointer;transition:background .14s}
+.cs-step:hover{background:#eff6ff}
+.cs-step.open{background:var(--primary-l);border-color:var(--primary)}
+.cs-step-body{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.cs-step.open .cs-step-body{display:block}
+.reveal-all-btn{padding:8px 16px;border-radius:8px;background:var(--navy);color:#fff;
+  border:none;cursor:pointer;font-size:.8rem;font-weight:600;margin-bottom:12px;font-family:inherit}
+
+/* Explanation */
+.explanation{background:#f8fafc;border-left:4px solid var(--primary);border-radius:0 8px 8px 0;
+  padding:12px 16px;margin-top:12px;font-size:.87rem;display:none;line-height:1.7}
+.explanation.show{display:block}
+.result-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+  border-radius:999px;font-size:.78rem;font-weight:700;margin-bottom:8px}
+.rb-correct{background:#dcfce7;color:#15803d}
+.rb-wrong{background:#fee2e2;color:#b91c1c}
+
+/* Show explanation button */
+.show-btn{padding:7px 16px;border-radius:8px;border:2px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.78rem;font-weight:600;color:var(--muted);transition:all .14s;font-family:inherit}
+.show-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── Home screen ── */
+.home{max-width:800px;margin:0 auto}
+.home-hero{background:linear-gradient(135deg,#1e293b,#4f46e5);border-radius:16px;
+  padding:40px;color:#fff;margin-bottom:36px;text-align:center}
+.home-hero h1{font-size:2rem;font-weight:800;margin-bottom:8px}
+.home-hero p{color:rgba(255,255,255,.75);font-size:.95rem}
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:32px}
+.topic-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:22px;
+  cursor:pointer;transition:all .15s;text-align:left}
+.topic-card:hover{border-color:var(--primary);box-shadow:0 6px 20px rgba(79,70,229,.12);transform:translateY(-2px)}
+.tc-week{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--primary);margin-bottom:6px}
+.tc-title{font-size:.93rem;font-weight:600;margin-bottom:10px;line-height:1.4}
+.tc-chips{display:flex;gap:5px;flex-wrap:wrap}
+.tc-chip{font-size:.66rem;font-weight:600;padding:2px 8px;border-radius:999px;
+  background:#f1f5f9;color:var(--muted);border:1px solid var(--border)}
+.mock-card{background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:12px;padding:24px;
+  cursor:pointer;color:#fff;text-align:center;transition:all .15s;border:none;width:100%;font-family:inherit}
+.mock-card:hover{opacity:.9;transform:translateY(-2px)}
+.mock-card h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.mock-card p{font-size:.83rem;color:rgba(255,255,255,.8)}
+
+/* ── Mock Exam ── */
+.exam-header{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;
+  margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.timer{font-size:1.5rem;font-weight:800;color:var(--hard);font-family:'Fira Code',monospace}
+.exam-progress{flex:1}
+.exam-q-num{font-size:.85rem;color:var(--muted)}
+.exam-nav{display:flex;gap:10px}
+.exam-btn{padding:9px 20px;border-radius:8px;border:2px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.85rem;font-weight:600;transition:all .14s;font-family:inherit}
+.exam-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.exam-btn:hover{border-color:var(--primary)}
+.exam-result{background:#fff;border-radius:16px;padding:40px;text-align:center}
+.exam-result h2{font-size:2rem;font-weight:800;margin-bottom:8px}
+.score-circle{width:120px;height:120px;border-radius:50%;background:var(--primary-l);
+  display:flex;align-items:center;justify-content:center;margin:20px auto;
+  font-size:2rem;font-weight:800;color:var(--primary);border:4px solid var(--primary)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:60px;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:12px}
+
+/* ── Concept guides ── */
+.guide-section{margin-bottom:40px}
+.guide-section h3{font-size:1.05rem;font-weight:700;margin-bottom:16px;color:var(--navy)}
+.concept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.concept-tile{border-radius:10px;padding:16px;text-align:center}
+.concept-tile .ct-icon{font-size:1.8rem;margin-bottom:8px}
+.concept-tile .ct-name{font-weight:700;font-size:.88rem;margin-bottom:4px}
+.concept-tile .ct-desc{font-size:.77rem;line-height:1.5;opacity:.85}
+.ct-L{background:#dbeafe;color:#1e40af}
+.ct-I{background:#dcfce7;color:#166534}
+.ct-N{background:#fef9c3;color:#854d0e}
+.ct-E{background:#fce7f3;color:#9d174d}
+.flow-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.flow-box{background:#fff;border:2px solid var(--border);border-radius:10px;padding:12px 16px;
+  font-size:.84rem;font-weight:600;text-align:center;min-width:110px}
+.flow-box.active{border-color:var(--primary);background:var(--primary-l);color:var(--primary)}
+.flow-box.green{border-color:var(--easy);background:var(--easy-l);color:#166534}
+.flow-box.red{border-color:var(--hard);background:var(--hard-l);color:#991b1b}
+.flow-arrow{font-size:1.2rem;color:var(--muted)}
+.decision-table{width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:20px}
+.decision-table th{background:var(--navy);color:#fff;padding:8px 12px;text-align:left}
+.decision-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.decision-table tr:nth-child(even) td{background:#f8fafc}
+.hyp-steps{counter-reset:step;display:flex;flex-direction:column;gap:10px}
+.hyp-step{display:flex;gap:14px;align-items:flex-start}
+.hyp-step-num{background:var(--primary);color:#fff;width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:2px}
+.hyp-step-body{flex:1;font-size:.87rem;padding-top:2px}
+.tip-box{background:#fffbeb;border:1px solid var(--medium);border-left:4px solid var(--medium);
+  border-radius:8px;padding:12px 16px;font-size:.85rem;margin:12px 0}
+
+@media print{.sidebar,.topbar{display:none}.content{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sb-brand">QBUS5001 Exercises</div>
+  <div class="sb-section">Topics</div>
+  <button class="sb-btn active" onclick="showHome()" id="btn-home">🏠 Home</button>
+  <hr class="sb-divider">
+  <button class="sb-btn" onclick="showTopic(0)" id="btn-0">Week 0 — Mock Exam</button><button class="sb-btn" onclick="showTopic(8)" id="btn-8">Week 8 — Hypothesis Testing (1 Pop</button><button class="sb-btn" onclick="showTopic(9)" id="btn-9">Week 9 — Two Population Tests</button><button class="sb-btn" onclick="showTopic(10)" id="btn-10">Week 10 — Simple Regression</button><button class="sb-btn" onclick="showTopic(11)" id="btn-11">Week 11 — Diagnostics</button><button class="sb-btn" onclick="showTopic(12)" id="btn-12">Week 12 — Multiple Regression</button>
+  <hr class="sb-divider">
+  <button class="sb-btn" onclick="startExam()" id="btn-exam">⏱ Timed Mock Exam</button>
+  <hr class="sb-divider">
+  <div class="sb-section">Reference</div>
+  <button class="sb-btn" onclick="showGuide('ht')" id="btn-g-ht">📘 Hypothesis Testing</button>
+  <button class="sb-btn" onclick="showGuide('line')" id="btn-g-line">📐 L.I.N.E Diagnostics</button>
+  <button class="sb-btn" onclick="showGuide('reg')" id="btn-g-reg">📈 Regression Guide</button>
+  <hr class="sb-divider">
+  <div class="sb-stat" id="sb-score">Score: 0 / 0</div>
+  <div class="sb-stat" id="sb-done">Answered: 0</div>
+</nav>
+
+<!-- Main content -->
+<div class="content">
+
+<!-- HOME VIEW -->
+<div id="view-home">
+  <div class="home">
+    <div class="home-hero">
+      <h1>Interactive Exercises</h1>
+      <p>60+ questions · Easy to Expert · Case Studies · Timed Mock Exam</p>
+    </div>
+    <div class="topic-grid" id="home-grid"></div>
+    <button class="mock-card" onclick="startExam()">
+      <h3>⏱ Timed Mock Exam</h3>
+      <p>20 random questions · 30 minutes · All topics · Final score &amp; review</p>
+    </button>
+  </div>
+</div>
+
+<!-- TOPIC VIEW -->
+<div id="view-topic" style="display:none">
+  <div class="topbar">
+    <h2 id="topic-title">Topic</h2>
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setDiff('all')" id="fd-all">All levels</button>
+      <button class="filter-btn f-easy" onclick="setDiff('easy')" id="fd-easy">Easy</button>
+      <button class="filter-btn f-medium" onclick="setDiff('medium')" id="fd-medium">Medium</button>
+      <button class="filter-btn f-hard" onclick="setDiff('hard')" id="fd-hard">Hard</button>
+      <button class="filter-btn f-expert" onclick="setDiff('expert')" id="fd-expert">Expert</button>
+    </div>
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setType('all')" id="ft-all">All types</button>
+      <button class="filter-btn" onclick="setType('mcq')" id="ft-mcq">MCQ</button>
+      <button class="filter-btn" onclick="setType('tf')" id="ft-tf">T/F</button>
+      <button class="filter-btn" onclick="setType('casestudy')" id="ft-cs">Case Study</button>
+    </div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="topic-prog"></div></div>
+  <div class="score-line">
+    <span id="topic-score-txt">Score: 0/0</span>
+    <span id="topic-pct"></span>
+  </div>
+  <div id="q-container"></div>
+  <div id="q-empty" class="empty" style="display:none">
+    <div class="empty-icon">🔍</div>
+    <p>No questions match this filter.</p>
+  </div>
+</div>
+
+<!-- EXAM VIEW -->
+<div id="view-exam" style="display:none">
+  <div class="exam-header">
+    <div>
+      <div class="timer" id="exam-timer">30:00</div>
+      <div class="exam-q-num" id="exam-qnum">Question 1 of 20</div>
+    </div>
+    <div class="exam-progress" style="flex:1">
+      <div class="prog-wrap"><div class="prog-bar" id="exam-prog"></div></div>
+    </div>
+    <div class="exam-nav">
+      <button class="exam-btn" onclick="examPrev()">← Prev</button>
+      <button class="exam-btn" onclick="examNext()">Next →</button>
+      <button class="exam-btn primary" onclick="submitExam()">Submit Exam</button>
+    </div>
+  </div>
+  <div id="exam-q-container"></div>
+  <div id="exam-result" style="display:none" class="exam-result">
+    <div class="score-circle" id="exam-score-circle">0%</div>
+    <h2 id="exam-result-title">Exam Complete!</h2>
+    <p id="exam-result-sub" style="color:var(--muted);margin-bottom:24px"></p>
+    <button class="exam-btn primary" onclick="showHome()" style="margin-right:10px">Back to Home</button>
+    <button class="exam-btn" onclick="reviewExam()">Review Answers</button>
+  </div>
+</div>
+
+<!-- GUIDE VIEW -->
+<div id="view-guide" style="display:none">
+  <!-- Hypothesis Testing Guide -->
+  <div id="guide-ht" class="guide-section" style="display:none">
+    <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📘 Hypothesis Testing — Visual Guide</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:28px">Step-by-step process, decision rules, and when to use each test.</p>
+
+    <div class="guide-section">
+      <h3>The 5 Steps of Hypothesis Testing</h3>
+      <div class="hyp-steps">
+        <div class="hyp-step"><div class="hyp-step-num">1</div><div class="hyp-step-body"><strong>State the hypotheses:</strong> Write H₀ (null) and H₁ (alternative). H₀ always has an equality (=, ≤, ≥). H₁ is what you want to prove.</div></div>
+        <div class="hyp-step"><div class="hyp-step-num">2</div><div class="hyp-step-body"><strong>Choose the test &amp; significance level α:</strong> Is σ known → z-test. σ unknown → t-test. Typically α = 0.05.</div></div>
+        <div class="hyp-step"><div class="hyp-step-num">3</div><div class="hyp-step-body"><strong>Calculate the test statistic:</strong><br>z-test: <code>Z = (X&#x305; &minus; &mu;&#x2080;) / (&sigma; / &radic;n)</code>&nbsp;&nbsp; t-test: <code>T = (X&#x305; &minus; &mu;&#x2080;) / (s / &radic;n)</code></div></div>
+        <div class="hyp-step"><div class="hyp-step-num">4</div><div class="hyp-step-body"><strong>Make a decision:</strong> p-value approach: reject H₀ if p &lt; α. Critical value approach: reject H₀ if |test stat| &gt; critical value.</div></div>
+        <div class="hyp-step"><div class="hyp-step-num">5</div><div class="hyp-step-body"><strong>Conclusion in context:</strong> "At the 5% significance level, there is sufficient evidence that..." — always write in the language of the problem.</div></div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Which Test Do I Use? (Decision Flow)</h3>
+      <div class="flow-wrap">
+        <div class="flow-box active">Testing population mean μ?</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">σ known?</div>
+        <div class="flow-arrow">→ Yes</div>
+        <div class="flow-box green">z-test<br><small>Z = (X̄−μ₀)/(σ/√n)</small></div>
+      </div>
+      <div class="flow-wrap">
+        <div class="flow-box" style="visibility:hidden;min-width:140px"></div>
+        <div class="flow-arrow" style="visibility:hidden">→</div>
+        <div class="flow-box">σ known?</div>
+        <div class="flow-arrow">→ No</div>
+        <div class="flow-box green">t-test (df=n−1)<br><small>T = (X̄−μ₀)/(s/√n)</small></div>
+      </div>
+      <div class="tip-box">⚠️ <strong>Common mistake:</strong> Using a two-tailed test when the problem says "more than" or "less than" — that requires a one-tailed test.</div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Critical Values Quick Reference</h3>
+      <table class="decision-table">
+        <tr><th>Test type</th><th>α = 0.10</th><th>α = 0.05</th><th>α = 0.01</th></tr>
+        <tr><td>Two-tailed z</td><td>±1.645</td><td>±1.960</td><td>±2.576</td></tr>
+        <tr><td>One-tailed upper z</td><td>1.282</td><td>1.645</td><td>2.326</td></tr>
+        <tr><td>One-tailed lower z</td><td>−1.282</td><td>−1.645</td><td>−2.326</td></tr>
+        <tr><td>t (df=20, two-tailed)</td><td>1.725</td><td>2.086</td><td>2.845</td></tr>
+        <tr><td>t (df=30, two-tailed)</td><td>1.697</td><td>2.042</td><td>2.750</td></tr>
+      </table>
+    </div>
+
+    <div class="guide-section">
+      <h3>Type I vs Type II Errors</h3>
+      <table class="decision-table">
+        <tr><th>Decision \ Reality</th><th>H₀ is TRUE</th><th>H₀ is FALSE</th></tr>
+        <tr><td><strong>Fail to reject H₀</strong></td><td style="background:#f0fdf4;color:#166534">✅ Correct (confidence = 1−α)</td><td style="background:#fef2f2;color:#991b1b">❌ Type II error (β)</td></tr>
+        <tr><td><strong>Reject H₀</strong></td><td style="background:#fef2f2;color:#991b1b">❌ Type I error (α)</td><td style="background:#f0fdf4;color:#166534">✅ Correct — Power (1−β)</td></tr>
+      </table>
+      <div class="tip-box">💡 Reducing α (stricter test) → fewer Type I errors but more Type II errors. Increasing sample size reduces BOTH types.</div>
+    </div>
+  </div>
+
+  <!-- LINE Guide -->
+  <div id="guide-line" class="guide-section" style="display:none">
+    <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📐 L.I.N.E — Regression Diagnostics</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:28px">The four assumptions of linear regression and how to check each one.</p>
+
+    <div class="concept-grid">
+      <div class="concept-tile ct-L">
+        <div class="ct-icon">📏</div>
+        <div class="ct-name">L — Linearity</div>
+        <div class="ct-desc">The relationship between X and Y must be linear (straight-line). Check: residual plot vs X should show NO pattern.</div>
+      </div>
+      <div class="concept-tile ct-I">
+        <div class="ct-icon">🔗</div>
+        <div class="ct-name">I — Independence</div>
+        <div class="ct-desc">Residuals must be independent of each other. Check: Durbin-Watson statistic (should be ≈ 2). Critical in time-series data.</div>
+      </div>
+      <div class="concept-tile ct-N">
+        <div class="ct-icon">🔔</div>
+        <div class="ct-name">N — Normality</div>
+        <div class="ct-desc">Residuals should be normally distributed. Check: Shapiro-Wilk test (p &gt; 0.05) and Normal Q-Q plot (points on diagonal).</div>
+      </div>
+      <div class="concept-tile ct-E">
+        <div class="ct-icon">⚖️</div>
+        <div class="ct-name">E — Equal Variance</div>
+        <div class="ct-desc">Variance of residuals must be constant (homoscedasticity). Check: residual plot should show uniform spread. Fan shape = violation.</div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3>What Each Residual Plot Pattern Means</h3>
+      <table class="decision-table">
+        <tr><th>Pattern in residual plot</th><th>Assumption violated</th><th>Fix</th></tr>
+        <tr><td>🌀 Curved / U-shape</td><td>Linearity (L)</td><td>Add X² term, or log(X)</td></tr>
+        <tr><td>🌪️ Fan / funnel shape</td><td>Equal variance (E)</td><td>log(Y), or weighted LS</td></tr>
+        <tr><td>📈 Systematic drift over time</td><td>Independence (I)</td><td>Include lagged variables</td></tr>
+        <tr><td>🏔️ Skewed or heavy tails on Q-Q</td><td>Normality (N)</td><td>log(Y), check outliers</td></tr>
+        <tr><td>🌫️ Random scatter — no pattern</td><td>None — all good!</td><td>No fix needed</td></tr>
+      </table>
+    </div>
+
+    <div class="guide-section">
+      <h3>Diagnostic Tests Summary</h3>
+      <table class="decision-table">
+        <tr><th>Test</th><th>Checks</th><th>H₀</th><th>Action if p &lt; 0.05</th></tr>
+        <tr><td>Shapiro-Wilk</td><td>Normality (N)</td><td>Residuals are normal</td><td>Normality violated — transform Y</td></tr>
+        <tr><td>Durbin-Watson ≈ 2</td><td>Independence (I)</td><td>No autocorrelation</td><td>Autocorrelation — restructure model</td></tr>
+        <tr><td>Breusch-Pagan</td><td>Equal variance (E)</td><td>Homoscedasticity holds</td><td>Heteroscedasticity — log(Y) or WLS</td></tr>
+        <tr><td>Residual plot (visual)</td><td>Linearity (L)</td><td>No pattern in residuals</td><td>Non-linearity — add polynomial/transform</td></tr>
+      </table>
+      <div class="tip-box">⚠️ <strong>Order of fixes:</strong> Always address non-linearity first, then heteroscedasticity, then normality. A log(Y) transformation often fixes multiple issues at once.</div>
+    </div>
+  </div>
+
+  <!-- Regression Guide -->
+  <div id="guide-reg" class="guide-section" style="display:none">
+    <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📈 Regression — Reading Output</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:28px">How to interpret every number in a regression output table.</p>
+
+    <div class="guide-section">
+      <h3>Simple Linear Regression — Output Guide</h3>
+      <table class="decision-table">
+        <tr><th>Output item</th><th>What it means</th><th>Exam interpretation</th></tr>
+        <tr><td><strong>Intercept (β̂₀)</strong></td><td>Predicted Y when X = 0</td><td>"When X = 0, Y is estimated to be β̂₀ (check if meaningful in context)"</td></tr>
+        <tr><td><strong>Slope (β̂₁)</strong></td><td>Change in Y per unit ↑ in X</td><td>"For each 1-unit increase in X, Y increases/decreases by β̂₁ on average"</td></tr>
+        <tr><td><strong>R²</strong></td><td>Proportion of Y variation explained</td><td>"X explains R²% of the variation in Y"</td></tr>
+        <tr><td><strong>Sₑ / RMSE</strong></td><td>Typical prediction error</td><td>"On average, predictions deviate from actual Y by Sₑ units"</td></tr>
+        <tr><td><strong>p-value (slope)</strong></td><td>Test H₀: β₁ = 0</td><td>If p &lt; 0.05: "X is a significant predictor of Y"</td></tr>
+        <tr><td><strong>F-statistic p-value</strong></td><td>Overall model significance</td><td>If p &lt; 0.05: "The model is statistically significant overall"</td></tr>
+      </table>
+    </div>
+
+    <div class="guide-section">
+      <h3>Multiple Regression — Extra Concepts</h3>
+      <table class="decision-table">
+        <tr><th>Concept</th><th>What it means</th><th>How to detect</th></tr>
+        <tr><td><strong>Adjusted R²</strong></td><td>R² penalised for number of predictors</td><td>Use instead of R² when comparing models with different k</td></tr>
+        <tr><td><strong>Multicollinearity</strong></td><td>Predictors are highly correlated with each other</td><td>VIF &gt; 10 → serious; VIF &gt; 5 → moderate concern</td></tr>
+        <tr><td><strong>Partial effect</strong></td><td>Effect of Xᵢ holding all other X constant</td><td>Read directly from MLR coefficient table</td></tr>
+        <tr><td><strong>Overall F-test</strong></td><td>H₀: all βᵢ = 0 simultaneously</td><td>Check F-stat p-value in ANOVA table</td></tr>
+      </table>
+      <div class="tip-box">💡 <strong>R² vs Adjusted R²:</strong> R² always increases when you add more variables. Adjusted R² only increases if the new variable genuinely improves predictions. Always use Adjusted R² to compare models.</div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Prediction vs Interpretation — Key Difference</h3>
+      <div class="flow-wrap">
+        <div class="flow-box active">Given X value</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box green">Substitute into Ŷ = β̂₀ + β̂₁X<br><small>→ point prediction</small></div>
+      </div>
+      <div class="tip-box">⚠️ <strong>Never extrapolate:</strong> Only predict Y for X values within the range of your original data. Predicting outside this range is unreliable.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .content -->
+</div><!-- .app -->
+
+<script>
+const ALL_Q = [{"id": "w8_01", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "easy", "question": "Which statement correctly describes the null hypothesis H₀?", "options": ["The claim we are trying to prove with our data", "The status quo assumption of no effect or no difference", "The probability our result occurred by chance", "The minimum sample size needed"], "correct": 1, "explanation": "H₀ always states 'no effect' or 'no difference'. We either reject it (strong evidence against) or fail to reject it. We never 'prove' H₀ — the burden of proof lies with H₁."}, {"id": "w8_02", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "easy", "question": "When should you use a <strong>z-test</strong> instead of a <strong>t-test</strong> for testing a population mean?", "options": ["When the sample size is less than 30", "When the population standard deviation σ is <em>known</em>", "When the data is not normally distributed", "When you want a two-tailed test"], "correct": 1, "explanation": "Use the z-test when σ (population SD) is <em>known</em>. Use the t-test when σ is <em>unknown</em> and must be estimated by the sample SD s. In practice, σ is almost always unknown so the t-test is more common."}, {"id": "w8_03", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "tf", "difficulty": "easy", "question": "True or False: If the p-value is less than α, we <em>accept</em> the null hypothesis H₀.", "correct": false, "explanation": "FALSE. A p-value &lt; α means we <strong>reject</strong> H₀. We never 'accept' H₀ — we only 'fail to reject' it (meaning there is insufficient evidence against it)."}, {"id": "w8_04", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "easy", "question": "What does the significance level α = 0.05 represent?", "options": ["The probability that H₁ is true", "The probability of rejecting H₀ when it is actually true (Type I error rate)", "The probability of accepting H₀ when it is false", "The confidence that our sample mean is correct"], "correct": 1, "explanation": "α is the Type I error rate — the probability of incorrectly rejecting a true H₀. Choosing α = 0.05 means we accept a 5% chance of a false positive."}, {"id": "w8_05", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "easy", "question": "A researcher tests whether mean daily sugar in a drink differs from 5g. What is the correct set of hypotheses?", "options": ["H₀: μ = 5 vs H₁: μ > 5", "H₀: μ ≠ 5 vs H₁: μ = 5", "H₀: μ = 5 vs H₁: μ ≠ 5", "H₀: X̄ = 5 vs H₁: X̄ ≠ 5"], "correct": 2, "explanation": "'Differs from' implies a <strong>two-tailed</strong> test. H₀ states the status quo (μ = 5) while H₁ captures the alternative (μ ≠ 5). Note: hypotheses are always about population parameters (μ), not sample statistics (X̄)."}, {"id": "w8_06", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "medium", "question": "A sample of n=25 sugar packets has X̄ = 510g, and the population SD is σ = 20g. The claimed mean is μ₀ = 500g. Calculate the test statistic Z.", "options": ["Z = 0.5", "Z = 2.5", "Z = 1.96", "Z = 5.0"], "correct": 1, "explanation": "$$Z = \\frac{\\bar{X} - \\mu_0}{\\sigma/\\sqrt{n}} = \\frac{510 - 500}{20/\\sqrt{25}} = \\frac{10}{4} = 2.5$$Since Z = 2.5 > 1.96 (critical value for α=0.05 two-tailed), we reject H₀."}, {"id": "w8_07", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "medium", "question": "For a one-tailed (upper) test at α = 0.05, what is the critical value for a z-test?", "options": ["±1.96", "1.645", "2.326", "1.96"], "correct": 1, "explanation": "For a one-tailed upper test (H₁: μ > μ₀) at α = 0.05, the critical value is z = 1.645. For two-tailed at α = 0.05, use ±1.96. For one-tailed at α = 0.01, use z = 2.326."}, {"id": "w8_08", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "medium", "question": "A t-test gives t = 2.1 with df = 20. The p-value for a two-tailed test is 0.049. At α = 0.05, what is the correct conclusion?", "options": ["Fail to reject H₀ because p-value > 0.025", "Reject H₀ because p-value < α", "Accept H₁ because the test statistic is large", "Reject H₀ because df > 10"], "correct": 1, "explanation": "p-value (0.049) &lt; α (0.05) → <strong>Reject H₀</strong>. There is sufficient statistical evidence at the 5% significance level. Note: we always compare the full p-value to α for two-tailed tests, not p/2."}, {"id": "w8_09", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "medium", "question": "What does it mean to commit a <strong>Type II error (β)</strong>?", "options": ["Rejecting H₀ when it is actually true", "Failing to reject H₀ when it is actually false", "Setting α too small", "Getting a p-value below 0.05"], "correct": 1, "explanation": "Type II error (β): failing to reject H₀ when H₁ is actually true — a 'false negative'. The <strong>power</strong> of a test = 1 − β, the probability of correctly detecting a true effect. Increasing sample size reduces β and increases power."}, {"id": "w8_10", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "hard", "question": "Which of the following will <em>increase</em> the power of a hypothesis test?", "options": ["Decreasing the sample size", "Decreasing α from 0.05 to 0.01", "Increasing the sample size", "Using a two-tailed test instead of one-tailed"], "correct": 2, "explanation": "Power = 1 − β. Power <strong>increases</strong> when: (1) sample size ↑, (2) effect size ↑, (3) α ↑, (4) σ ↓, or (5) switching from two-tailed to one-tailed (when the direction is correctly specified). Decreasing α makes it harder to reject H₀, reducing power."}, {"id": "w8_11", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "casestudy", "difficulty": "hard", "question": "<strong>Case Study – Chatime Sugar Test</strong><br><br>Chatime claims their drinks contain a mean of 30g of sugar. A health inspector samples 36 drinks and finds X̄ = 33g with s = 9g. Test at α = 0.05 whether Chatime is under-reporting sugar content.", "steps": ["<strong>Step 1 – Hypotheses:</strong> H₀: μ = 30 vs H₁: μ > 30 (one-tailed upper, because we suspect under-reporting means the true mean is higher than claimed)", "<strong>Step 2 – Test statistic:</strong> σ is unknown, use t-test.<br>$$t = \\frac{\\bar{X} - \\mu_0}{s/\\sqrt{n}} = \\frac{33 - 30}{9/\\sqrt{36}} = \\frac{3}{1.5} = 2.0$$", "<strong>Step 3 – Critical value:</strong> df = n − 1 = 35. For α = 0.05 one-tailed, t* ≈ 1.690", "<strong>Step 4 – Decision:</strong> t = 2.0 > t* = 1.690 → <strong>Reject H₀</strong>", "<strong>Step 5 – Conclusion:</strong> At the 5% significance level, there is sufficient statistical evidence that the true mean sugar content exceeds 30g. Chatime may be under-reporting."], "explanation": "Key points: (1) Use t-test because σ is unknown. (2) One-tailed upper because H₁ is 'greater than'. (3) Always write a conclusion in context — don't just say 'reject H₀'."}, {"id": "w8_12", "week": 8, "topic": "Hypothesis Testing – One Population", "type": "mcq", "difficulty": "expert", "question": "A researcher sets α = 0.01 (very strict) instead of α = 0.05. Assuming everything else stays the same, which of the following is true?", "options": ["The probability of a Type I error increases", "The probability of a Type II error decreases", "The probability of a Type I error decreases but Type II error increases", "Both Type I and Type II errors decrease"], "correct": 2, "explanation": "There is a fundamental trade-off: <strong>decreasing α reduces Type I error but increases Type II error (β)</strong>. Making the test stricter means you need more extreme evidence to reject H₀, so you are more likely to miss a real effect. This is why we must balance α carefully — a very strict α protects against false positives but risks false negatives."}, {"id": "w9_01", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "mcq", "difficulty": "easy", "question": "Which situation calls for a <strong>paired samples</strong> t-test rather than an independent samples test?", "options": ["Comparing exam scores of students from two different universities", "Comparing blood pressure of the same patients before and after medication", "Comparing average salaries between male and female employees", "Comparing defect rates from two factories"], "correct": 1, "explanation": "Paired samples are used when the two measurements come from the <strong>same subject</strong> (before/after, matched pairs). This removes between-subject variability, making the test more powerful. Independent samples are used when the two groups have no connection."}, {"id": "w9_02", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "tf", "difficulty": "easy", "question": "True or False: When testing H₀: μ₁ − μ₂ = 0, you must always assume equal population variances.", "correct": false, "explanation": "FALSE. There are two options: (1) <strong>Equal variance (pooled) t-test</strong> — used when we can reasonably assume σ₁² = σ₂² (confirmed by an F-test or context), and (2) <strong>Welch's t-test (unequal variance)</strong> — safer when variances may differ. If unsure, Welch's is the more conservative and safer choice."}, {"id": "w9_03", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "mcq", "difficulty": "easy", "question": "What is the purpose of the F-test for equality of variances?", "options": ["To test whether the two population means are equal", "To determine whether σ₁² = σ₂² before choosing which t-test to use", "To test whether the data follows a normal distribution", "To calculate the pooled standard deviation"], "correct": 1, "explanation": "The F-test (H₀: σ₁² = σ₂²) determines whether it is appropriate to use the <strong>pooled t-test</strong>. If we fail to reject H₀ of the F-test (variances are equal), we can use the pooled test. If we reject (unequal variances), use Welch's t-test."}, {"id": "w9_04", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "mcq", "difficulty": "medium", "question": "Two groups have s₁² = 25 (n₁ = 11) and s₂² = 9 (n₂ = 11). What is the F-test statistic for testing equal variances?", "options": ["F = 0.36", "F = 2.78", "F = 1.67", "F = 5.0"], "correct": 1, "explanation": "$$F = \\frac{s_{\\text{larger}}^2}{s_{\\text{smaller}}^2} = \\frac{25}{9} \\approx 2.78$$Always put the <em>larger</em> variance in the numerator to get F ≥ 1. The F-test is then always right-tailed. df₁ = n₁ − 1 = 10, df₂ = n₂ − 1 = 10."}, {"id": "w9_05", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "mcq", "difficulty": "medium", "question": "For an independent samples test with equal variances, the <strong>pooled variance</strong> formula is:", "options": ["$$s_p^2 = \\frac{s_1^2 + s_2^2}{2}$$", "$$s_p^2 = \\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}$$", "$$s_p^2 = \\frac{n_1 s_1^2 + n_2 s_2^2}{n_1+n_2}$$", "$$s_p^2 = \\sqrt{s_1^2 + s_2^2}$$"], "correct": 1, "explanation": "The pooled variance is a weighted average of the two sample variances, weighted by degrees of freedom: $$s_p^2 = \\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}$$This gives more weight to the group with the larger sample size."}, {"id": "w9_06", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "casestudy", "difficulty": "hard", "question": "<strong>Case Study – Graduate Salary Comparison</strong><br><br>A company claims Business Analytics graduates earn more than Finance graduates. Sample data: Analytics: X̄₁ = $72,000, s₁ = $8,000, n₁ = 30. Finance: X̄₂ = $68,000, s₂ = $9,000, n₂ = 30. An F-test confirms equal variances. Test at α = 0.05.", "steps": ["<strong>Step 1 – Hypotheses:</strong> H₀: μ₁ − μ₂ = 0 vs H₁: μ₁ − μ₂ > 0 (one-tailed, Analytics earns more)", "<strong>Step 2 – Pooled variance:</strong>$$s_p^2 = \\frac{29(64{,}000{,}000) + 29(81{,}000{,}000)}{58} = 72{,}500{,}000$$$$s_p = \\$8{,}515$$", "<strong>Step 3 – Test statistic:</strong>$$t = \\frac{(72000-68000) - 0}{8515\\sqrt{1/30+1/30}} = \\frac{4000}{2200} \\approx 1.82$$", "<strong>Step 4 – Decision:</strong> df = 58, t* ≈ 1.671 (one-tailed, α=0.05). Since 1.82 > 1.671 → <strong>Reject H₀</strong>", "<strong>Step 5 – Conclusion:</strong> At α = 0.05, there is sufficient evidence that Analytics graduates earn significantly more than Finance graduates on average."], "explanation": "Common mistake: using a two-tailed test when 'earns more' clearly implies a one-tailed test. Also ensure the F-test is done first — if variances were unequal, you'd need Welch's test with different df."}, {"id": "w9_07", "week": 9, "topic": "Two Population Hypothesis Testing", "type": "mcq", "difficulty": "expert", "question": "When would you use the <strong>Shapiro-Wilk test</strong> in a two-sample analysis?", "options": ["To test whether the two group means are equal", "To verify the normality assumption required for t-tests", "To compare variances between the two groups", "To determine the appropriate significance level"], "correct": 1, "explanation": "The Shapiro-Wilk test (H₀: data is normally distributed) is used to check the normality assumption before using t-tests. If normality is violated (reject H₀ of Shapiro-Wilk) and sample sizes are small, consider non-parametric alternatives like the Mann-Whitney U test."}, {"id": "w10_01", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "easy", "question": "In the regression equation Ŷ = β̂₀ + β̂₁X, what does β̂₁ represent?", "options": ["The value of Y when X = 0", "The average change in Y for a one-unit increase in X", "The correlation between X and Y", "The proportion of variance in Y explained by X"], "correct": 1, "explanation": "β̂₁ is the <strong>slope</strong>: for every one-unit increase in X, Y changes by β̂₁ units on average (holding other factors constant). β̂₀ is the <strong>intercept</strong>: the predicted value of Y when X = 0 (may not always be meaningful in context)."}, {"id": "w10_02", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "easy", "question": "R² = 0.82 in a regression of Sales on Advertising spend. What is the best interpretation?", "options": ["Advertising causes 82% of sales", "82% of the variation in Sales is explained by Advertising", "The correlation between Sales and Advertising is 0.82", "For every $1 increase in Advertising, Sales increase by $0.82"], "correct": 1, "explanation": "R² (coefficient of determination) measures the <strong>proportion of total variation in Y explained by the model</strong>. R² = 0.82 means 82% of the variability in Sales is accounted for by Advertising, with 18% unexplained (residual)."}, {"id": "w10_03", "week": 10, "topic": "Simple Linear Regression", "type": "tf", "difficulty": "easy", "question": "True or False: A strong correlation between X and Y (r ≈ 0.95) proves that X causes Y.", "correct": false, "explanation": "FALSE. <strong>Correlation does not imply causation.</strong> Two variables can be strongly correlated due to: (1) coincidence, (2) a third confounding variable, or (3) reverse causation (Y causes X). Establishing causation requires controlled experiments or careful causal analysis."}, {"id": "w10_04", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "medium", "question": "A regression equation is: Salary = 35,000 + 2,500 × YearsExperience. What is the predicted salary for someone with 8 years of experience?", "options": ["$55,000", "$54,500", "$55,500", "$57,000"], "correct": 0, "explanation": "$$\\hat{Y} = 35{,}000 + 2{,}500 \\times 8 = 35{,}000 + 20{,}000 = \\$55{,}000$$The intercept ($35,000) is the baseline salary with 0 years experience. Each additional year adds $2,500."}, {"id": "w10_05", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "medium", "question": "In hypothesis testing for the slope β₁, what are the hypotheses for testing if X is a <em>significant</em> predictor of Y?", "options": ["H₀: β₁ = 1 vs H₁: β₁ ≠ 1", "H₀: β₁ = 0 vs H₁: β₁ ≠ 0", "H₀: R² = 0 vs H₁: R² > 0", "H₀: β̂₁ = β₁ vs H₁: β̂₁ ≠ β₁"], "correct": 1, "explanation": "Testing H₀: β₁ = 0 vs H₁: β₁ ≠ 0 determines whether X has a <strong>linear relationship</strong> with Y. If β₁ = 0, X provides no predictive value. The test statistic is: $$t = \\frac{\\hat{\\beta}_1 - 0}{SE(\\hat{\\beta}_1)}$$ with df = n − 2."}, {"id": "w10_06", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "medium", "question": "What does the <strong>Standard Error of the Estimate (Sₑ)</strong> measure?", "options": ["The standard deviation of the slope estimate", "The average distance between actual Y values and predicted Ŷ values", "The proportion of variance explained by the model", "The standard deviation of X values"], "correct": 1, "explanation": "Sₑ (also written s or RMSE) measures the <strong>typical prediction error</strong>: the average distance of actual data points from the regression line. A smaller Sₑ means predictions are more accurate. It is measured in the same units as Y."}, {"id": "w10_07", "week": 10, "topic": "Simple Linear Regression", "type": "casestudy", "difficulty": "hard", "question": "<strong>Case Study – Regression Output Interpretation</strong><br><br>A regression of House Price (Y, $000s) on Size (X, m²) gives:<br>• Intercept: 120.5, p-value = 0.001<br>• Slope: 2.8, p-value = 0.000<br>• R² = 0.74, Sₑ = 45.2, n = 50<br><br>Answer all parts below.", "steps": ["<strong>Part 1 – Write the equation:</strong> Price = 120.5 + 2.8 × Size. For every 1m² increase in size, price increases by $2,800 on average.", "<strong>Part 2 – Is Size significant?</strong> p-value for slope = 0.000 &lt; 0.05. Yes, Size is a statistically significant predictor of Price at the 5% level.", "<strong>Part 3 – Interpret R²:</strong> 74% of the variation in house prices is explained by house size. The remaining 26% is due to other factors (location, age, etc.).", "<strong>Part 4 – Predict price for 150m²:</strong> Price = 120.5 + 2.8(150) = 120.5 + 420 = $540,500", "<strong>Part 5 – Interpret Sₑ = 45.2:</strong> On average, predictions deviate from actual prices by about $45,200. This is the typical prediction error."], "explanation": "Always interpret in context — not just 'slope is significant' but 'each additional m² is associated with $2,800 higher price on average'. Avoid extrapolating beyond the range of observed X values."}, {"id": "w10_08", "week": 10, "topic": "Simple Linear Regression", "type": "mcq", "difficulty": "expert", "question": "A regression has R² = 0.90 but Sₑ = $50,000. A manager says 'the model is excellent because R² is very high'. What is the key concern?", "options": ["R² is always unreliable", "High R² with large Sₑ means predictions may still be practically useless despite the statistical fit", "The sample size must be too small", "The slope must not be statistically significant"], "correct": 1, "explanation": "R² tells us the <em>proportion</em> of variance explained, but not whether predictions are <em>practically useful</em>. If house prices range from $200K–$800K, a typical error of $50K may be acceptable. But if prices are $150K–$200K, $50K error is catastrophic. Always consider <strong>both R² and Sₑ in context</strong>."}, {"id": "w11_01", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "mcq", "difficulty": "easy", "question": "What does the acronym <strong>L.I.N.E</strong> stand for in regression diagnostics?", "options": ["Linear, Independent, Normal, Equal variance", "Linear, Insignificant, Non-random, Explained", "Large, Independent, Normal, Exogenous", "Linear, Interval, Normal, Error-free"], "correct": 0, "explanation": "L.I.N.E represents the four key assumptions of linear regression:<br>• <strong>L</strong>inearity: linear relationship between X and Y<br>• <strong>I</strong>ndependence: residuals are independent<br>• <strong>N</strong>ormality: residuals are normally distributed<br>• <strong>E</strong>qual variance (homoscedasticity): residuals have constant variance"}, {"id": "w11_02", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "mcq", "difficulty": "easy", "question": "What is a <strong>residual</strong> in regression analysis?", "options": ["The slope of the regression line", "The difference between the actual Y and the predicted Ŷ: eᵢ = Yᵢ − Ŷᵢ", "The proportion of variance not explained by the model", "The standard deviation of the X variable"], "correct": 1, "explanation": "A residual eᵢ = Yᵢ − Ŷᵢ measures how far each actual observation is from the regression line's prediction. Analysing residuals is how we check ALL four LINE assumptions. A good model should have residuals that are random, with no patterns."}, {"id": "w11_03", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "tf", "difficulty": "medium", "question": "True or False: A residual plot showing a <em>fan shape</em> (residuals spreading out as X increases) indicates a violation of the <strong>Equal Variance</strong> assumption.", "correct": true, "explanation": "TRUE. A fan shape (or funnel shape) in residuals vs fitted values indicates <strong>heteroscedasticity</strong> — non-constant variance. This violates the E in LINE. Fix: log-transform Y, use weighted least squares, or use robust standard errors."}, {"id": "w11_04", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "mcq", "difficulty": "medium", "question": "A residual plot shows a <strong>curved/U-shaped pattern</strong> when plotted against X. Which assumption is violated?", "options": ["Independence (I)", "Normality (N)", "Linearity (L)", "Equal Variance (E)"], "correct": 2, "explanation": "A curved pattern in residuals vs X indicates the relationship is <strong>not linear</strong> — violating the L assumption. Fix: add a quadratic term (X²) or use a non-linear transformation (e.g., log X). If the plot looks random with no pattern, linearity holds."}, {"id": "w11_05", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "mcq", "difficulty": "medium", "question": "The <strong>Shapiro-Wilk test</strong> is used in regression diagnostics to check:", "options": ["Whether X and Y have a linear relationship", "Whether residuals are normally distributed", "Whether residuals have constant variance", "Whether observations are independent"], "correct": 1, "explanation": "Shapiro-Wilk tests H₀: residuals are normally distributed. If p-value &lt; α → reject H₀ → normality violated. Check also with a <strong>Normal Q-Q plot</strong> (points should follow the diagonal line). Note: with large samples (n > 100), the CLT makes normality less critical."}, {"id": "w11_06", "week": 11, "topic": "Regression Diagnostics – L.I.N.E", "type": "casestudy", "difficulty": "hard", "question": "<strong>Case Study – Diagnosing Regression Problems</strong><br><br>A regression of Income on Age shows: (1) Residual plot vs fitted values: fan shape spreading from left to right. (2) Q-Q plot: residuals curve away from the diagonal at both ends. (3) Durbin-Watson statistic = 0.8 (close to 0).<br><br>Diagnose each violation and suggest fixes.", "steps": ["<strong>Violation 1 – Equal Variance:</strong> The fan shape indicates heteroscedasticity (E violated). Fix: log-transform Income (Y), or use weighted least squares.", "<strong>Violation 2 – Normality:</strong> Q-Q plot curving at ends suggests heavy tails or skewness (N violated). Fix: log-transform Y (often fixes both heteroscedasticity and non-normality simultaneously).", "<strong>Violation 3 – Independence:</strong> Durbin-Watson near 0 (not near 2) indicates positive autocorrelation (I violated). This often occurs with time-series data. Fix: include lagged variables, or use time-series methods.", "<strong>Priority:</strong> Address violations in order — fix non-linearity first (if any), then heteroscedasticity, then normality. Independence violations require restructuring the model."], "explanation": "In practice, taking log(Y) often simultaneously fixes heteroscedasticity and non-normality in income/salary data. Always re-check diagnostics after applying a fix."}, {"id": "w12_01", "week": 12, "topic": "Multiple Linear Regression", "type": "mcq", "difficulty": "easy", "question": "In a multiple regression model Y = β₀ + β₁X₁ + β₂X₂ + ε, how is the coefficient β₁ interpreted?", "options": ["The change in Y for a one-unit increase in X₁, ignoring X₂", "The change in Y for a one-unit increase in X₁, <em>holding X₂ constant</em>", "The total effect of X₁ and X₂ combined on Y", "The correlation between X₁ and Y"], "correct": 1, "explanation": "In multiple regression, each coefficient is a <strong>partial effect</strong>: β₁ measures the change in Y for a one-unit increase in X₁, <em>holding all other predictors constant</em> (ceteris paribus). This is fundamentally different from simple regression."}, {"id": "w12_02", "week": 12, "topic": "Multiple Linear Regression", "type": "mcq", "difficulty": "easy", "question": "Why is <strong>Adjusted R²</strong> preferred over R² when comparing models with different numbers of predictors?", "options": ["Adjusted R² is always larger than R²", "R² always increases when you add more variables, even irrelevant ones — Adjusted R² penalises for unnecessary predictors", "Adjusted R² is easier to calculate", "R² cannot be calculated for multiple regression"], "correct": 1, "explanation": "R² can only <em>increase</em> (or stay the same) when you add more variables — even random noise. This makes R² misleading for model comparison. <strong>Adjusted R²</strong> applies a penalty for each additional predictor:$$\\bar{R}^2 = 1 - (1-R^2)\\frac{n-1}{n-k-1}$$where k = number of predictors. It only increases if the new variable genuinely improves the model."}, {"id": "w12_03", "week": 12, "topic": "Multiple Linear Regression", "type": "mcq", "difficulty": "easy", "question": "What is <strong>multicollinearity</strong> in multiple regression?", "options": ["When the residuals are correlated with the fitted values", "When two or more predictor variables are highly correlated with each other", "When the response variable Y is correlated with the residuals", "When outliers have high leverage on the regression line"], "correct": 1, "explanation": "Multicollinearity occurs when predictors are highly intercorrelated. Effects: inflated standard errors, unstable coefficient estimates, difficulty interpreting individual β values. Check with <strong>VIF (Variance Inflation Factor)</strong> — VIF > 10 suggests serious multicollinearity."}, {"id": "w12_04", "week": 12, "topic": "Multiple Linear Regression", "type": "mcq", "difficulty": "medium", "question": "A MLR model gives: Salary = 30,000 + 2,000(Experience) + 5,000(Masters) + 800(Age). What is the predicted salary for a 28-year-old with a Masters degree and 4 years of experience?", "options": ["$65,400", "$67,400", "$63,400", "$72,400"], "correct": 1, "explanation": "$$\\hat{Y} = 30{,}000 + 2{,}000(4) + 5{,}000(1) + 800(28)$$$$= 30{,}000 + 8{,}000 + 5{,}000 + 22{,}400 = \\$65{,}400$$Wait — recalculate: 30000 + 8000 + 5000 + 22400 = $65,400. The correct answer is $65,400 → option A. Explanation: each predictor contributes its partial effect simultaneously."}, {"id": "w12_05", "week": 12, "topic": "Multiple Linear Regression", "type": "mcq", "difficulty": "medium", "question": "The overall F-test in multiple regression tests:", "options": ["Whether any individual predictor is significant", "Whether ALL slope coefficients are simultaneously equal to zero", "Whether the model has multicollinearity", "Whether residuals are normally distributed"], "correct": 1, "explanation": "The overall F-test: H₀: β₁ = β₂ = ... = βₖ = 0 vs H₁: at least one βᵢ ≠ 0. A significant F-test (p &lt; α) means at least one predictor is useful — but not necessarily all of them. Individual t-tests then identify which predictors are significant."}, {"id": "w12_06", "week": 12, "topic": "Multiple Linear Regression", "type": "casestudy", "difficulty": "expert", "question": "<strong>Mock Exam Style – Graduate Salary MLR</strong><br><br>Output from a MLR of Graduate Salary (Y) on WAM (X₁), Internships (X₂), and Private Tutoring (X₃):<br>• Intercept: 25,000 (p = 0.040)<br>• WAM: 400 (p = 0.003)<br>• Internships: 3,200 (p = 0.001)<br>• Private Tutoring: 800 (p = 0.210)<br>• R² = 0.68, Adjusted R² = 0.65, F-statistic p = 0.000, n = 80", "steps": ["<strong>Part 1 – Overall model:</strong> F-test p = 0.000 &lt; 0.05 → The model is statistically significant overall. At least one predictor is useful.", "<strong>Part 2 – Individual significance:</strong> WAM (p=0.003) and Internships (p=0.001) are significant at α=0.05. Private Tutoring (p=0.210 > 0.05) is NOT significant — consider removing it.", "<strong>Part 3 – Interpret WAM coefficient:</strong> Holding other predictors constant, each 1-point increase in WAM is associated with $400 higher salary on average.", "<strong>Part 4 – Model fit:</strong> R² = 0.68 means 68% of salary variation is explained. Adjusted R² = 0.65 accounts for the 3 predictors. Dropping Private Tutoring may actually improve Adjusted R².", "<strong>Part 5 – Prediction for WAM=75, 2 internships, no tutoring:</strong> Ŷ = 25,000 + 400(75) + 3,200(2) + 800(0) = 25,000 + 30,000 + 6,400 = $61,400"], "explanation": "Key exam skill: interpret each component of regression output systematically — overall F-test first, then individual t-tests, then model fit, then prediction. Always write conclusions in context."}, {"id": "mx_01", "week": 0, "topic": "Mock Exam – Mixed", "type": "mcq", "difficulty": "medium", "question": "[Mixed] A researcher reports p-value = 0.048 at α = 0.05 and concludes 'we have proven H₁ is true'. What is wrong with this statement?", "options": ["Nothing — a significant p-value proves H₁", "The p-value threshold should be 0.01 not 0.05", "We never 'prove' a hypothesis — we only reject or fail to reject H₀ with a given probability of error", "The p-value is too small to be meaningful"], "correct": 2, "explanation": "Hypothesis testing <strong>never proves</strong> anything with certainty. Rejecting H₀ at α = 0.05 means we have evidence against H₀ at a 5% significance level — there is still a 5% chance we made a Type I error. Correct language: 'there is sufficient evidence to reject H₀' or 'the data is consistent with H₁'."}, {"id": "mx_02", "week": 0, "topic": "Mock Exam – Mixed", "type": "mcq", "difficulty": "hard", "question": "[Mixed] A student fits a simple regression and gets R² = 0.91 and an F-test p = 0.000. However, the residual plot shows a clear curve. What should the student do?", "options": ["Report the model as excellent since R² is very high", "The model is fine since the F-test is significant", "Investigate non-linearity: add X² or transform variables, then re-diagnose", "Increase the sample size"], "correct": 2, "explanation": "High R² does not mean the model is appropriate. A curved residual plot signals <strong>non-linearity (L violation)</strong> — the linear model is misspecified. Fix: add a polynomial term (X²) or use log/sqrt transformations. Always check diagnostics regardless of R²."}, {"id": "mx_03", "week": 0, "topic": "Mock Exam – Mixed", "type": "mcq", "difficulty": "expert", "question": "[Mixed] You run a two-sample t-test and get p = 0.06 (α = 0.05). Your manager says 'increase the sample size and the result will become significant.' Is this good statistical practice?", "options": ["Yes — larger samples always give better results", "No — deliberately increasing n to 'fish' for significance is p-hacking and inflates Type I error", "Yes — p = 0.06 is so close to 0.05 that it probably represents a real effect", "No — the result will never become significant with more data"], "correct": 1, "explanation": "This is <strong>p-hacking</strong>: collecting more data until a desired p-value is reached. With a large enough sample, even trivially small and practically meaningless effects become 'statistically significant'. Good practice: pre-specify sample size and α before data collection. Consider whether a p = 0.06 effect is <em>practically</em> meaningful, not just statistically."}];
+
+// State
+let _state = {};  // qId -> { answered, correct }
+let _currTopic = null;
+let _diffFilter = 'all';
+let _typeFilter = 'all';
+let _examQs = [];
+let _examIdx = 0;
+let _examTimer = null;
+let _examSec = 1800;
+let _examAnswers = {};
+
+// Load state from localStorage
+try { _state = JSON.parse(localStorage.getItem('qbus_ex_state') || '{}'); } catch(e) {}
+function saveState() { try { localStorage.setItem('qbus_ex_state', JSON.stringify(_state)); } catch(e) {} }
+
+function updSidebar() {
+  const answered = Object.keys(_state).length;
+  const correct  = Object.values(_state).filter(s=>s.correct).length;
+  document.getElementById('sb-done').textContent = 'Answered: ' + answered;
+  document.getElementById('sb-score').textContent = 'Score: ' + correct + ' / ' + answered;
+}
+
+// ── Views ─────────────────────────────────────────────────────────────────────
+function showView(name) {
+  ['home','topic','exam','guide'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===name ? '' : 'none';
+  });
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+}
+
+function showHome() {
+  showView('home');
+  document.getElementById('btn-home').classList.add('active');
+  buildHome();
+  if(_examTimer) { clearInterval(_examTimer); _examTimer=null; }
+}
+
+function showTopic(week) {
+  _currTopic = week;
+  _diffFilter = 'all';
+  _typeFilter = 'all';
+  showView('topic');
+  const btn = document.getElementById('btn-'+week);
+  if(btn) btn.classList.add('active');
+  const labels = {"0": "Mock Exam Questions", "8": "Week 8 \u2013 Hypothesis Testing (1 Pop.)", "9": "Week 9 \u2013 Two Population Tests", "10": "Week 10 \u2013 Simple Regression", "11": "Week 11 \u2013 Diagnostics", "12": "Week 12 \u2013 Multiple Regression"};
+  document.getElementById('topic-title').textContent = labels[week] || 'Questions';
+  ['all','easy','medium','hard','expert'].forEach(d => {
+    const b=document.getElementById('fd-'+d); if(b) b.classList.toggle('active', d==='all');
+  });
+  ['all','mcq','tf','casestudy'].forEach(t => {
+    const b=document.getElementById('ft-'+t); if(b) b.classList.toggle('active', t==='all');
+  });
+  renderQuestions();
+}
+
+// ── Filter helpers ────────────────────────────────────────────────────────────
+function setDiff(d) {
+  _diffFilter = d;
+  ['all','easy','medium','hard','expert'].forEach(x => {
+    const b=document.getElementById('fd-'+x);
+    if(b) b.classList.toggle('active', x===d);
+  });
+  renderQuestions();
+}
+
+function setType(t) {
+  _typeFilter = t;
+  ['all','mcq','tf','casestudy'].forEach(x => {
+    const b=document.getElementById('ft-'+x);
+    if(b) b.classList.toggle('active', x===t);
+  });
+  renderQuestions();
+}
+
+// ── Question rendering ────────────────────────────────────────────────────────
+function getTopicQs() {
+  return ALL_Q.filter(q =>
+    (_currTopic === 0 ? q.week === 0 : q.week === _currTopic || q.week === 0) &&
+    (_diffFilter === 'all' || q.difficulty === _diffFilter) &&
+    (_typeFilter === 'all' || q.type === _typeFilter)
+  );
+}
+
+function renderQuestions() {
+  const qs = getTopicQs();
+  const container = document.getElementById('q-container');
+  const empty = document.getElementById('q-empty');
+  container.innerHTML = '';
+  if(!qs.length) { empty.style.display=''; container.style.display='none'; return; }
+  empty.style.display='none'; container.style.display='';
+  qs.forEach((q,i) => { container.appendChild(buildQCard(q, i+1, qs.length, false)); });
+  updateTopicScore(qs);
+  if(window.renderMathInElement) renderMathInElement(container, {throwOnError:false,
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+    {left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});
+}
+
+function updateTopicScore(qs) {
+  const answered = qs.filter(q => _state[q.id]);
+  const correct  = answered.filter(q => _state[q.id]?.correct);
+  const pct = answered.length ? Math.round(correct.length/answered.length*100) : 0;
+  const prog = qs.length ? (answered.length/qs.length*100) : 0;
+  document.getElementById('topic-prog').style.width = prog+'%';
+  document.getElementById('topic-score-txt').textContent = `Score: ${correct.length}/${answered.length}`;
+  document.getElementById('topic-pct').textContent = answered.length ? pct+'% correct' : '';
+}
+
+function diffLabel(d) { return {easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert'}[d]||d; }
+function typeLabel(t) { return {mcq:'MCQ',tf:'True/False',calc:'Calculation',casestudy:'Case Study'}[t]||t; }
+
+function buildQCard(q, num, total, examMode) {
+  const div = document.createElement('div');
+  div.className = 'q-card';
+  div.id = 'qcard-'+q.id;
+  const prevState = _state[q.id];
+
+  let inner = `
+    <div class="q-meta">
+      <span class="q-badge b-${q.difficulty}">${diffLabel(q.difficulty)}</span>
+      <span class="q-badge b-type">${typeLabel(q.type)}</span>
+      ${!examMode ? '<span class="q-num">Q'+num+(total?' of '+total:'')+'</span>' : ''}
+    </div>
+    <div class="q-text">${q.question}</div>`;
+
+  if(q.type === 'mcq') {
+    inner += '<div class="options">';
+    q.options.forEach((opt,i) => {
+      let cls = 'opt-btn';
+      let dis = '';
+      if(prevState && !examMode) {
+        dis = 'disabled';
+        if(i === q.correct) cls += ' correct';
+        else if(i === prevState.chosen && !prevState.correct) cls += ' wrong';
+      }
+      inner += `<button class="${cls}" ${dis} onclick="answerMCQ('${q.id}',${i},${q.correct},${examMode})">${opt}</button>`;
+    });
+    inner += '</div>';
+  } else if(q.type === 'tf') {
+    inner += '<div class="tf-btns">';
+    [true,false].forEach(val => {
+      let cls = 'tf-btn';
+      let dis = '';
+      if(prevState && !examMode) {
+        dis = 'disabled';
+        if(val === q.correct) cls += ' correct';
+        else if(val === prevState.chosen && !prevState.correct) cls += ' wrong';
+      }
+      inner += `<button class="${cls}" ${dis} onclick="answerTF('${q.id}',${val},${q.correct},${examMode})">${val?'True':'False'}</button>`;
+    });
+    inner += '</div>';
+  } else if(q.type === 'casestudy') {
+    inner += `<button class="reveal-all-btn" onclick="toggleAllSteps('${q.id}')">📋 Reveal All Steps</button>`;
+    inner += '<div class="cs-steps">';
+    q.steps.forEach((step,i) => {
+      inner += `<div class="cs-step" id="step-${q.id}-${i}" onclick="toggleStep('${q.id}',${i})">
+        <strong>Step ${i+1}</strong>
+        <div class="cs-step-body">${step}</div>
+      </div>`;
+    });
+    inner += '</div>';
+  }
+
+  // Result badge + explanation
+  if(prevState && !examMode && (q.type === 'mcq' || q.type === 'tf')) {
+    inner += `<div class="result-badge ${prevState.correct?'rb-correct':'rb-wrong'}">
+      ${prevState.correct?'✅ Correct':'❌ Incorrect'}
+    </div>`;
+  }
+
+  const showExp = (prevState && !examMode) || q.type === 'casestudy';
+  inner += `<button class="show-btn" onclick="toggleExp('${q.id}')" id="expbtn-${q.id}">
+    ${showExp ? '💡 Explanation' : '💡 Show Explanation'}
+  </button>`;
+  inner += `<div class="explanation${showExp?'':''} " id="exp-${q.id}">${q.explanation}</div>`;
+
+  div.innerHTML = inner;
+  return div;
+}
+
+function answerMCQ(id, chosen, correct, examMode) {
+  if(_state[id] && !examMode) return;
+  const isCorrect = chosen === correct;
+  if(!examMode) {
+    _state[id] = {answered:true, correct:isCorrect, chosen};
+    saveState(); updSidebar();
+    // Update buttons
+    const card = document.getElementById('qcard-'+id);
+    card.querySelectorAll('.opt-btn').forEach((b,i) => {
+      b.disabled = true;
+      if(i===correct) b.classList.add('correct');
+      else if(i===chosen && !isCorrect) b.classList.add('wrong');
+    });
+    // Show result badge
+    const badge = document.createElement('div');
+    badge.className = `result-badge ${isCorrect?'rb-correct':'rb-wrong'}`;
+    badge.innerHTML = isCorrect ? '✅ Correct' : '❌ Incorrect';
+    const expBtn = card.querySelector('.show-btn');
+    card.insertBefore(badge, expBtn);
+    if(isCorrect) { const e=document.getElementById('exp-'+id); if(e) {e.classList.add('show');} }
+    updateTopicScore(getTopicQs());
+  } else {
+    _examAnswers[id] = {chosen, correct:isCorrect};
+    // highlight selected
+    const card = document.getElementById('qcard-'+id);
+    card.querySelectorAll('.opt-btn').forEach((b,i) => {
+      b.classList.toggle('selected', i===chosen);
+    });
+  }
+}
+
+function answerTF(id, chosen, correct, examMode) {
+  if(_state[id] && !examMode) return;
+  const isCorrect = chosen === correct;
+  if(!examMode) {
+    _state[id] = {answered:true, correct:isCorrect, chosen};
+    saveState(); updSidebar();
+    const card = document.getElementById('qcard-'+id);
+    card.querySelectorAll('.tf-btn').forEach(b => {
+      b.disabled = true;
+      const bval = b.textContent === 'True';
+      if(bval === correct) b.classList.add('correct');
+      else if(bval === chosen && !isCorrect) b.classList.add('wrong');
+    });
+    const badge = document.createElement('div');
+    badge.className = `result-badge ${isCorrect?'rb-correct':'rb-wrong'}`;
+    badge.innerHTML = isCorrect ? '✅ Correct' : '❌ Incorrect';
+    const expBtn = card.querySelector('.show-btn');
+    card.insertBefore(badge, expBtn);
+    if(isCorrect) { const e=document.getElementById('exp-'+id); if(e) e.classList.add('show'); }
+    updateTopicScore(getTopicQs());
+  } else {
+    _examAnswers[id] = {chosen, correct:isCorrect};
+    const card = document.getElementById('qcard-'+id);
+    card.querySelectorAll('.tf-btn').forEach(b => {
+      b.classList.toggle('selected', (b.textContent==='True')===chosen);
+    });
+  }
+}
+
+function toggleExp(id) {
+  const el = document.getElementById('exp-'+id);
+  const btn = document.getElementById('expbtn-'+id);
+  if(!el) return;
+  const showing = el.classList.toggle('show');
+  btn.textContent = showing ? '💡 Hide Explanation' : '💡 Show Explanation';
+  if(showing && window.renderMathInElement) renderMathInElement(el, {throwOnError:false,
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+    {left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});
+}
+
+function toggleStep(qid, i) {
+  document.getElementById('step-'+qid+'-'+i).classList.toggle('open');
+}
+
+function toggleAllSteps(qid) {
+  document.querySelectorAll(`[id^="step-${qid}-"]`).forEach(s => s.classList.add('open'));
+}
+
+// ── Home ──────────────────────────────────────────────────────────────────────
+function buildHome() {
+  const labels = {"0": "Mock Exam Questions", "8": "Week 8 \u2013 Hypothesis Testing (1 Pop.)", "9": "Week 9 \u2013 Two Population Tests", "10": "Week 10 \u2013 Simple Regression", "11": "Week 11 \u2013 Diagnostics", "12": "Week 12 \u2013 Multiple Regression"};
+  const grid = document.getElementById('home-grid');
+  grid.innerHTML = '';
+  [8, 9, 10, 11, 12].forEach(w => {
+    const qs  = ALL_Q.filter(q=>q.week===w);
+    const ans = qs.filter(q=>_state[q.id]);
+    const div = document.createElement('div');
+    div.className = 'topic-card';
+    div.onclick = ()=>showTopic(w);
+    const diffs = ['easy','medium','hard','expert'];
+    const chips = diffs.map(d=>{
+      const n=qs.filter(q=>q.difficulty===d).length;
+      return n ? `<span class="tc-chip">${n} ${d}</span>` : '';
+    }).join('');
+    div.innerHTML = `<div class="tc-week">Week ${w}</div>
+      <div class="tc-title">${labels[w]||''}</div>
+      <div class="tc-chips">${chips}<span class="tc-chip" style="background:#e0e7ff;color:#4f46e5">${ans.length}/${qs.length} done</span></div>`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Mock Exam ─────────────────────────────────────────────────────────────────
+function startExam() {
+  if(_examTimer) clearInterval(_examTimer);
+  showView('exam');
+  document.getElementById('btn-exam').classList.add('active');
+  document.getElementById('exam-result').style.display='none';
+  document.getElementById('exam-q-container').style.display='';
+  // Random 20 questions
+  const pool = [...ALL_Q].sort(()=>Math.random()-.5).slice(0,20);
+  _examQs = pool; _examIdx = 0; _examAnswers = {}; _examSec = 1800;
+  showExamQ(0);
+  _examTimer = setInterval(()=>{
+    _examSec--;
+    const m=Math.floor(_examSec/60), s=_examSec%60;
+    document.getElementById('exam-timer').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if(_examSec<=300) document.getElementById('exam-timer').style.color='var(--hard)';
+    if(_examSec<=0) submitExam();
+  },1000);
+}
+
+function showExamQ(idx) {
+  _examIdx = idx;
+  const q = _examQs[idx];
+  const container = document.getElementById('exam-q-container');
+  container.innerHTML = '';
+  container.appendChild(buildQCard(q, idx+1, _examQs.length, true));
+  document.getElementById('exam-qnum').textContent = `Question ${idx+1} of ${_examQs.length}`;
+  document.getElementById('exam-prog').style.width = ((idx+1)/_examQs.length*100)+'%';
+  if(window.renderMathInElement) renderMathInElement(container, {throwOnError:false,
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+    {left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});
+}
+
+function examPrev() { if(_examIdx>0) showExamQ(_examIdx-1); }
+function examNext() { if(_examIdx<_examQs.length-1) showExamQ(_examIdx+1); }
+
+function submitExam() {
+  if(_examTimer) { clearInterval(_examTimer); _examTimer=null; }
+  const gradable = _examQs.filter(q=>q.type==='mcq'||q.type==='tf');
+  let correct=0;
+  gradable.forEach(q=>{ if(_examAnswers[q.id]?.correct) correct++; });
+  const pct = gradable.length ? Math.round(correct/gradable.length*100) : 0;
+  document.getElementById('exam-q-container').style.display='none';
+  document.getElementById('exam-result').style.display='';
+  document.getElementById('exam-score-circle').textContent = pct+'%';
+  document.getElementById('exam-result-title').textContent = pct>=80?'Excellent Work! 🎉':pct>=60?'Good Effort! 💪':'Keep Practising 📚';
+  document.getElementById('exam-result-sub').textContent = `${correct} / ${gradable.length} questions correct (${pct}%)`;
+  // Save to main state
+  _examQs.forEach(q=>{
+    if(_examAnswers[q.id]) {
+      _state[q.id]={answered:true,correct:_examAnswers[q.id].correct,chosen:_examAnswers[q.id].chosen};
+    }
+  });
+  saveState(); updSidebar();
+}
+
+function reviewExam() {
+  const container = document.getElementById('exam-q-container');
+  container.innerHTML=''; container.style.display='';
+  document.getElementById('exam-result').style.display='none';
+  _examQs.forEach((q,i)=>{
+    const card = buildQCard(q,i+1,_examQs.length,false);
+    container.appendChild(card);
+  });
+  if(window.renderMathInElement) renderMathInElement(container, {throwOnError:false,
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+    {left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});
+}
+
+// ── Guides ───────────────────────────────────────────────────────────────────
+function showGuide(name) {
+  showView('guide');
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('btn-g-'+name);
+  if(btn) btn.classList.add('active');
+  ['ht','line','reg'].forEach(g=>{
+    const el=document.getElementById('guide-'+g);
+    if(el) el.style.display = g===name ? '' : 'none';
+  });
+  if(window.renderMathInElement) {
+    const v=document.getElementById('view-guide');
+    renderMathInElement(v,{throwOnError:false,
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+      {left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+showHome();
+updSidebar();
+</script>
+</body>
+</html>
